@@ -2,7 +2,7 @@ defmodule CommandedIssue556.TestEventHandler do
   use Commanded.Event.Handler,
     application: CommandedIssue556.TestApp,
     name: "test-event-handler",
-    concurrency: 2
+    concurrency: 5
 
   alias CommandedIssue556.TestEvent
 

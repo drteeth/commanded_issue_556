@@ -27,7 +27,7 @@ defmodule CommandedIssue556Test do
     results =
       TestEventHandler.get_inserts(test)
       |> Enum.map(&elem(&1, 1))
-      # |> Enum.uniq()
+      |> Enum.uniq()
       |> Enum.sort()
 
     # Then what should we see? That all events were handled?
