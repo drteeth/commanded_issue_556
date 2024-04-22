@@ -6,22 +6,19 @@ defmodule CommandedIssue556.TestEventHandler do
 
   alias CommandedIssue556.TestEvent
 
-  def init(config) do
-    test = Keyword.get(config, :state)
-    config = Keyword.put(config, :state, {test, Keyword.get(config, :index)})
-    {:ok, config}
-  end
+  def handle(%TestEvent{} = event, %{state: state}) do
+    test = Keyword.fetch!(state, :test)
 
-  def handle(%TestEvent{} = event, %{state: {table, index}}) do
-    if event.number == 6 do
+    if fail?(state, event) do
       {:error, :bad_number}
     else
-      true = :ets.insert(table, {event.test_id, event.number, index})
+      send(test, {:handled, event.number})
       :ok
     end
   end
 
-  def get_inserts(table) do
-    :ets.tab2list(table)
+  defp fail?(state, event) do
+    fail_on = Keyword.fetch!(state, :fail_on)
+    event.number == fail_on
   end
 end

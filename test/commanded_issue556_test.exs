@@ -3,35 +3,47 @@ defmodule CommandedIssue556Test do
 
   alias CommandedIssue556.TestApp
   alias CommandedIssue556.TestCommand
-  alias CommandedIssue556.TestEventHandler
+  alias CommandedIssue556.TestSupervisor
 
-  test "it handles events concurrently", %{test: test} do
-    # Given a test data table
-    :ets.new(test, [:duplicate_bag, :public, :named_table])
+  setup do
+    CommandedIssue556.reset_event_store!()
 
-    # And 20 events to handle
-    test_id = UUID.uuid1()
+    config = CommandedIssue556.EventStore.config()
+
+    [conn: start_supervised!({Postgrex, config})]
+  end
+
+  test "it handles all events concurrently", %{conn: conn} do
+    # Given we dispatch 20 commands to a stream
+    stream_id = UUID.uuid1()
 
     for n <- 1..20 do
-      command = %TestCommand{test_id: test_id, number: n}
+      command = %TestCommand{test_id: stream_id, number: n}
       :ok = TestApp.dispatch(command)
     end
 
-    # When we start the event handler, which will fail to handle event number 6
-    start_supervised!({TestEventHandler, state: test})
+    # When we start an event handler which will fail to handle the 6th event
+    start_supervised!({TestSupervisor, state: [test: self(), fail_on: 6]})
 
-    # And we give it a moment to run
-    :timer.sleep(500)
+    # Then we expect at least the first 5 events to be handled.
+    for n <- 1..5 do
+      assert_receive {:handled, ^n}
+    end
 
-    # And we ask the table which events were handled
-    results =
-      TestEventHandler.get_inserts(test)
-      |> Enum.map(&elem(&1, 1))
-      |> Enum.uniq()
-      |> Enum.sort()
+    # HACK: Give the handler time to finish whatever it's going to do
+    :timer.sleep(50)
 
-    # Then what should we see? That all events were handled?
-    # Should the handler fail on event number 6 every time or just once?
-    assert results == Enum.to_list(1..20)
+    # And we expect the subscription to be at the 5th event
+    assert get_last_seen(conn) == 5
+  end
+
+  defp get_last_seen(conn) do
+    case Postgrex.query!(conn, "select last_seen from subscriptions", []) do
+      %{rows: [[last_seen]]} ->
+        last_seen
+
+      %{rows: []} ->
+        0
+    end
   end
 end

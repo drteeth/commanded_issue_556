@@ -20,7 +20,7 @@ defmodule CommandedIssue556.MixProject do
 
   defp deps do
     [
-{:jason, "~> 1.2"},
+      {:jason, "~> 1.2"},
       {:commanded, "~> 1.4"},
       {:commanded_eventstore_adapter, "~> 1.4"},
       {:uuid, "~> 1.1"}

@@ -1,13 +1,15 @@
 import Config
 
 config :commanded_issue_556,
-  event_stores: [CommandedIssue556.EventStore],
-  event_store: [
-    # adapter: Commanded.EventStore.Adapters.EventStore,
-    adapter: Commanded.EventStore.Adapters.InMemory,
-    event_store: CommandedIssue556.EventStore,
-    serializer: Commanded.Serialization.JsonSerializer
-  ]
+  event_stores: [CommandedIssue556.EventStore]
+
+config :commanded_issue_556, CommandedIssue556.EventStore,
+  serializer: Commanded.Serialization.JsonSerializer,
+  hostname: "localhost",
+  username: "postgres",
+  password: "postgres",
+  database: "commanded_issue_556",
+  port: 5555
 
 config :logger,
-  level: :info
+  level: :error
